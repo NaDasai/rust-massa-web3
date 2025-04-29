@@ -131,9 +131,6 @@ mod tests {
         let number: u64 = 10000;
         let bytes = u64_to_bytes(number);
         let number2 = bytes_to_u64(&bytes);
-        println!("number: {}", number);
-        println!("bytes: {:?}", bytes);
-        println!("number2: {}", number2);
         assert_eq!(number, number2);
     }
 
@@ -142,9 +139,6 @@ mod tests {
         let number: u32 = 10000;
         let bytes = u32_to_bytes(number);
         let number2 = bytes_to_u32(&bytes);
-        println!("number: {}", number);
-        println!("bytes: {:?}", bytes);
-        println!("number2: {}", number2);
         assert_eq!(number, number2);
     }
 
@@ -153,9 +147,6 @@ mod tests {
         let number: u16 = 10000;
         let bytes = u16_to_bytes(number);
         let number2 = bytes_to_u16(&bytes);
-        println!("number: {}", number);
-        println!("bytes: {:?}", bytes);
-        println!("number2: {}", number2);
         assert_eq!(number, number2);
     }
 
@@ -164,9 +155,6 @@ mod tests {
         let number: U256 = U256::from(u64::MAX );
         let bytes = u256_to_bytes(number);
         let number2 = bytes_to_u256(&bytes);
-        println!("number: {}", number);
-        println!("bytes: {:?}", bytes);
-        println!("number2: {}", number2);
         assert_eq!(number, number2);
     }
 }

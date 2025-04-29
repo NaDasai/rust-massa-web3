@@ -1579,6 +1579,7 @@ version = "0.1.0"
 dependencies = [
  "alloy-primitives",
  "anyhow",
+ "byteorder",
  "dotenvy",
  "massa-proto-rs",
  "thiserror",
