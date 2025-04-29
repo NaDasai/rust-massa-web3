@@ -13,13 +13,7 @@ massa-proto-rs = { git = "https://github.com/massalabs/massa-proto-rs", branch =
     "tonic",
 ] }
 transition = { git = "https://github.com/massalabs/transition.git", branch = "main" }
-massa_hash = { git = "https://github.dev/massalabs/massa.git", branch = "main", package = "massa_hash" }
+massa_signature = { git = "https://github.com/massalabs/massa.git", branch = "main", package = "massa_signature" }
 alloy-primitives = "1.0.0"
 byteorder = "1.5.0"
-blake3 = "1.8.2"
-ed25519-dalek = "2.1.1"
-bs58 = "0.5.1"
 rand = "0.9.1"
-serde_json = "1.0.140"
-serde = "1.0.219"
-nom = "8.0.0"
