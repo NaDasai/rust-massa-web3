@@ -1,7 +1,7 @@
 use alloy_primitives::U256;
 use anyhow::{Context, Result, anyhow, bail};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
-use std::io::{Cursor, Write};
+use std::io::Cursor;
 
 use crate::types::ArrayType;
 
