@@ -4,3 +4,11 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+anyhow = "1.0.98"
+dotenvy = "0.15.7"
+thiserror = "2.0.12"
+tokio = { version = "1.44.2", features = ["full"] }
+tonic = "0.10"
+massa-proto-rs = { git = "https://github.com/massalabs/massa-proto-rs", branch = "main", features = [
+    "tonic",
+] }
