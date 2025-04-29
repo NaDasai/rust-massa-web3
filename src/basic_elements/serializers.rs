@@ -54,6 +54,27 @@ pub fn u32_to_bytes(u32: u32) -> Vec<u8> {
     u32.to_le_bytes().to_vec()
 }
 
+// Convert u16 to bytes
+
+pub fn u16_to_bytes(u16: u16) -> Vec<u8> {
+    // Convert the u16 to an array of 2 bytes in little-endian order
+    // Then convert this array to a vector
+    u16.to_le_bytes().to_vec()
+}
+
+// Convert bytes to u16
+pub fn bytes_to_u16(bytes: &Vec<u8>) -> u16 {
+    // Take the first 2 bytes of the input vector
+    // Convert them to a fixed-size array using try_into()
+    // Unwrap the result (this will panic if there are fewer than 2 bytes)
+    // Then convert the array to a u16 using from_le_bytes (assuming little-endian byte order)
+    u16::from_le_bytes(
+        bytes[..2]
+            .try_into()
+            .expect("Input bytes vector must be at least 2 bytes long for u16"),
+    )
+}
+
 #[cfg(test)]
 mod tests {
     // Import the parent module
@@ -103,6 +124,17 @@ mod tests {
         let number: u32 = 10000;
         let bytes = u32_to_bytes(number);
         let number2 = bytes_to_u32(&bytes);
+        println!("number: {}", number);
+        println!("bytes: {:?}", bytes);
+        println!("number2: {}", number2);
+        assert_eq!(number, number2);
+    }
+
+    #[test]
+    fn test_u16_bytes() {
+        let number: u16 = 10000;
+        let bytes = u16_to_bytes(number);
+        let number2 = bytes_to_u16(&bytes);
         println!("number: {}", number);
         println!("bytes: {:?}", bytes);
         println!("number2: {}", number2);
