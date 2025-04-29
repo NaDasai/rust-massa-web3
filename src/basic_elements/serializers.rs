@@ -1,3 +1,5 @@
+use alloy_primitives::U256;
+
 pub fn string_to_bytes(string: &str) -> Vec<u8> {
     string.as_bytes().to_vec()
 }
@@ -75,6 +77,22 @@ pub fn bytes_to_u16(bytes: &Vec<u8>) -> u16 {
     )
 }
 
+// Convert u256 to bytes
+pub fn u256_to_bytes(u256: U256) -> Vec<u8> {
+    U256::to_le_bytes_vec(&u256)
+}
+
+// Convert bytes to u256
+pub fn bytes_to_u256(bytes: &Vec<u8>) -> U256 {
+    let mut serializer = [0u8; 32];
+
+    let len = bytes.len().min(32);
+
+    serializer[..len].copy_from_slice(&bytes[..len]);
+
+    U256::from_le_bytes(serializer)
+}
+
 #[cfg(test)]
 mod tests {
     // Import the parent module
@@ -135,6 +153,17 @@ mod tests {
         let number: u16 = 10000;
         let bytes = u16_to_bytes(number);
         let number2 = bytes_to_u16(&bytes);
+        println!("number: {}", number);
+        println!("bytes: {:?}", bytes);
+        println!("number2: {}", number2);
+        assert_eq!(number, number2);
+    }
+
+    #[test]
+    fn test_u256_bytes() {
+        let number: U256 = U256::from(u64::MAX );
+        let bytes = u256_to_bytes(number);
+        let number2 = bytes_to_u256(&bytes);
         println!("number: {}", number);
         println!("bytes: {:?}", bytes);
         println!("number2: {}", number2);

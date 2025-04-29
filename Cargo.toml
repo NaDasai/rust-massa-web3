@@ -12,3 +12,4 @@ tonic = "0.10"
 massa-proto-rs = { git = "https://github.com/massalabs/massa-proto-rs", branch = "main", features = [
     "tonic",
 ] }
+alloy-primitives = "1.0.0"
