@@ -61,7 +61,7 @@ impl PublicGrpcClient {
 
         // Loop on all storage keys and call the read_storage_key function
         for storage_key in storage_keys {
-            let key_bytes = string_to_bytes(storage_key.key);
+            let key_bytes = string_to_bytes(&storage_key.key);
 
             let key_entry = AddressKeyEntry {
                 address: storage_key.smart_contract_address,
