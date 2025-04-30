@@ -9,11 +9,11 @@ use massa_models::{
 };
 use massa_proto_rs::massa::{
     api::v1::{
-        GetDatastoreEntriesRequest, GetStatusRequest, GetStatusResponse, SendOperationsRequest,
-        get_datastore_entry_filter, public_service_client::PublicServiceClient,
-        send_operations_response,
+        GetDatastoreEntriesRequest, GetOperationsRequest, GetStatusRequest, GetStatusResponse,
+        SendOperationsRequest, get_datastore_entry_filter,
+        public_service_client::PublicServiceClient, send_operations_response,
     },
-    model::v1::{AddressKeyEntry, DatastoreEntry},
+    model::v1::{AddressKeyEntry, DatastoreEntry, OperationWrapper},
 };
 use massa_serialization::Serializer;
 use massa_signature::KeyPair;
@@ -151,6 +151,8 @@ impl PublicGrpcClient {
             coins,
         };
 
+        println!("Fee inside: {:?}", Amount::from_str(&fee.to_string())?);
+
         let operation = Operation {
             fee: Amount::from_str(&fee.to_string())?,
             op: operation_type,
@@ -259,10 +261,27 @@ impl PublicGrpcClient {
 
         Ok(entries_result)
     }
+
+    pub async fn get_operations(
+        &mut self,
+        operation_ids: Vec<String>,
+    ) -> Result<Vec<OperationWrapper>, tonic::Status> {
+        let request = Request::new(GetOperationsRequest {
+            operation_ids: operation_ids.clone(),
+        });
+
+        let response = self.client.get_operations(request).await?.into_inner();
+
+        let operations = response.wrapped_operations;
+
+        Ok(operations)
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::basic_elements::args::Args;
+
     // Import the parent module
     use super::*;
 
@@ -278,7 +297,7 @@ mod tests {
         assert_eq!(response.status.unwrap().version, "DEVN.28.12");
     }
 
-    #[tokio::test]
+    /* #[tokio::test]
     async fn test_call_sc() {
         dotenvy::dotenv().ok();
 
@@ -315,5 +334,46 @@ mod tests {
             .expect("Failed to call smart contract");
 
         println!("Operation ID: {}", operation_id);
+    } */
+
+    #[tokio::test]
+    async fn test_set_name() {
+        let mut client = PublicGrpcClient::new_from_env()
+            .await
+            .expect("Failed to create client");
+
+        let target_function = "setName";
+        let fee = 0.1;
+        dbg!(&fee);
+        let max_gas = (u32::MAX - 1) as u64;
+        let target_address = "AS12ZmE7e8TSTcDBGYpUBCDhAR85Ts6b9Rf3aKTAmRXV8FC6PN4JK";
+        let coins: f64 = 0.01;
+        let expire_period = 2607968 + 20000;
+
+        // let parameter = Args::new().add_string("test").serialize();
+        let parameter = Vec::new();
+
+        let operation_id = client
+            .call_sc(
+                target_address,
+                target_function,
+                parameter,
+                fee,
+                max_gas,
+                coins,
+                expire_period,
+            )
+            .await
+            .expect("Failed to call smart contract");
+
+        println!("Operation ID of setting name: {}", operation_id);
+
+        // trying to get operation
+        let operations = client
+            .get_operations(vec![operation_id])
+            .await
+            .expect("Failed to get operations");
+
+        println!("Operations: {:?}", operations);
     }
 }
