@@ -27,3 +27,17 @@ pub enum ArrayType {
     F64,
     // Note: Serializable objects need special handling, not just a simple type enum
 }
+
+pub enum ChainId {
+    MAINNET = 1,
+    BUILDNET = 77658366,
+}
+
+impl ChainId {
+    pub fn to_u64(&self) -> u64 {
+        match self {
+            ChainId::MAINNET => 1,
+            ChainId::BUILDNET => 77658366,
+        }
+    }
+}
