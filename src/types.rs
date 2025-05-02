@@ -28,6 +28,7 @@ pub enum ArrayType {
     // Note: Serializable objects need special handling, not just a simple type enum
 }
 
+#[derive(Debug, Clone)]
 pub enum ChainId {
     MAINNET = 1,
     BUILDNET = 77658366,

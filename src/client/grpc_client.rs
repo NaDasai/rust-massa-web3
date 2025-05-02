@@ -27,6 +27,7 @@ use crate::{
     types::{ChainId, ReadStorageKey},
 };
 
+#[derive(Debug, Clone)]
 pub struct PublicGrpcClient {
     pub client: PublicServiceClient<Channel>,
     pub grpc_url: String,
