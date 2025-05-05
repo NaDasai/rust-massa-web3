@@ -13,7 +13,7 @@ use massa_proto_rs::massa::{
         SendOperationsRequest, get_datastore_entry_filter,
         public_service_client::PublicServiceClient, send_operations_response,
     },
-    model::v1::{AddressKeyEntry, DatastoreEntry, OperationWrapper},
+    model::v1::{AddressKeyEntry, DatastoreEntry, NativeAmount, OperationWrapper},
 };
 use massa_serialization::Serializer;
 use massa_signature::KeyPair;
@@ -132,7 +132,7 @@ impl PublicGrpcClient {
         smart_contract_address: &str,
         function_name: &str,
         args: Vec<u8>,
-        fee: f64,
+        fee: &str,
         max_gas: u64,
         coins: f64,
         expire_period: u64,
@@ -153,7 +153,7 @@ impl PublicGrpcClient {
         };
 
         let operation = Operation {
-            fee: Amount::from_str(&fee.to_string())?,
+            fee: Amount::from_str(fee)?,
             op: operation_type,
             expire_period,
         };
@@ -231,7 +231,7 @@ impl PublicGrpcClient {
     pub async fn read_storage_key(
         &mut self,
         storage_keys: Vec<ReadStorageKey>,
-    ) -> Result<Vec<DatastoreEntry>, tonic::Status> {
+    ) -> Result<Vec<DatastoreEntry>> {
         let mut datastores_entries_filters = Vec::new();
 
         // Loop on all storage keys and call the read_storage_key function
@@ -264,7 +264,7 @@ impl PublicGrpcClient {
     pub async fn get_operations(
         &mut self,
         operation_ids: Vec<String>,
-    ) -> Result<Vec<OperationWrapper>, tonic::Status> {
+    ) -> Result<Vec<OperationWrapper>> {
         let request = Request::new(GetOperationsRequest {
             operation_ids: operation_ids.clone(),
         });
@@ -275,11 +275,23 @@ impl PublicGrpcClient {
 
         Ok(operations)
     }
+
+    pub async fn get_minimal_fee(&mut self) -> Result<Option<NativeAmount>> {
+        let status_response = self.get_status().await.context("Failed to get status")?;
+
+        let status = status_response.status.context("Failed to get status")?;
+
+        let minimal_fee = status.minimal_fees;
+
+        Ok(minimal_fee)
+    }
+
+
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::basic_elements::args::Args;
+    use crate::{basic_elements::args::Args, constants::MAX_GAS_CALL};
 
     // Import the parent module
     use super::*;
@@ -303,12 +315,12 @@ mod tests {
             .expect("Failed to create client");
 
         let target_function = "setName";
-        let fee = 1.0;
-        dbg!(&fee);
-        let max_gas = (u32::MAX - 1) as u64;
+        let fee = "1";
+        // let max_gas = ((u32::MAX - 1) / 100) as u64;
+        let max_gas = MAX_GAS_CALL;
         let target_address = "AS1KNVHSySAd7jMDxvUQskTnKcDpiuhxgTujh2R5gbjBeoPX4csU";
         let coins: f64 = 1.0;
-        let expire_period = 2635087 + 10;
+        let expire_period = 3635176 + 10;
 
         let parameter = Args::new().serialize();
         // let parameter = Vec::new();
@@ -336,7 +348,4 @@ mod tests {
 
         println!("Operations: {:?}", operations);
     }
-
-
-
 }
