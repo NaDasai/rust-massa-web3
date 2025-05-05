@@ -23,7 +23,7 @@ use tonic::{Request, transport::Channel};
 
 use crate::{
     basic_elements::serializers::string_to_bytes,
-    constants::PublicGRPCURL,
+    constants::{PERIOD_TO_LIVE_DEFAULT, PublicGRPCURL},
     types::{ChainId, ReadStorageKey},
 };
 
@@ -289,7 +289,25 @@ impl PublicGrpcClient {
     pub async fn get_absolute_expire_period(&mut self) -> Result<u64> {
         let status_response = self.get_status().await.context("Failed to get status")?;
 
-        Ok(0)
+        let last_slot = status_response.last_executed_speculative_slot;
+
+        if let Some(last_slot) = last_slot {
+            return Ok(last_slot.period + PERIOD_TO_LIVE_DEFAULT);
+        }
+
+        Err(Error::msg("Failed to get last executed speculative slot"))
+    }
+
+    pub async fn get_last_speculative_period(&mut self) -> Result<Option<u64>> {
+        let status_response = self.get_status().await.context("Failed to get status")?;
+
+        let last_slot = status_response.last_executed_speculative_slot;
+
+        if let Some(last_slot) = last_slot {
+            return Ok(Some(last_slot.period));
+        }
+
+        Ok(None)
     }
 }
 
@@ -321,7 +339,10 @@ mod tests {
         let max_gas = MAX_GAS_CALL;
         let target_address = "AS1KNVHSySAd7jMDxvUQskTnKcDpiuhxgTujh2R5gbjBeoPX4csU";
         let coins: f64 = 1.0;
-        let expire_period = 3635176 + 10;
+        let expire_period = client
+            .get_absolute_expire_period()
+            .await
+            .expect("Failed to get absolute expire period");
 
         let parameter = Args::new().serialize();
         // let parameter = Vec::new();
