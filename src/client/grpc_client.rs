@@ -152,8 +152,6 @@ impl PublicGrpcClient {
             coins,
         };
 
-        println!("Fee inside: {:?}", Amount::from_str(&fee.to_string())?);
-
         let operation = Operation {
             fee: Amount::from_str(&fee.to_string())?,
             op: operation_type,
@@ -298,45 +296,6 @@ mod tests {
         assert_eq!(response.status.unwrap().version, "DEVN.28.12");
     }
 
-    /* #[tokio::test]
-    async fn test_call_sc() {
-        dotenvy::dotenv().ok();
-
-        let fee = 0.01;
-        let max_gas = (u32::MAX - 1) as u64;
-        let target_address = "AS12gSdL2EZH5Mj4UAFuk69aiYPuKoH1sK982oEDQfwxu97sAT9js";
-        let target_function = "addLiquidity";
-        let parameter = Vec::new();
-        let coins: f64 = 0.0;
-        let expire_period = 2607115 + 100000;
-
-        let mut client = PublicGrpcClient::new_buildnet()
-            .await
-            .expect("Failed to create client");
-
-        let private_key = std::env::var("PRIVATE_KEY").expect("PRIVATE_KEY not set");
-
-        client
-            .set_keypair(&private_key)
-            .await
-            .expect("Failed to set keypair");
-
-        let operation_id = client
-            .call_sc(
-                target_address,
-                target_function,
-                parameter,
-                fee,
-                max_gas,
-                coins,
-                expire_period,
-            )
-            .await
-            .expect("Failed to call smart contract");
-
-        println!("Operation ID: {}", operation_id);
-    } */
-
     #[tokio::test]
     async fn test_set_name() {
         let mut client = PublicGrpcClient::new_from_env()
@@ -344,15 +303,15 @@ mod tests {
             .expect("Failed to create client");
 
         let target_function = "setName";
-        let fee = 0.1;
+        let fee = 1.0;
         dbg!(&fee);
         let max_gas = (u32::MAX - 1) as u64;
-        let target_address = "AS12ZmE7e8TSTcDBGYpUBCDhAR85Ts6b9Rf3aKTAmRXV8FC6PN4JK";
-        let coins: f64 = 0.01;
-        let expire_period = 2607968 + 20000;
+        let target_address = "AS1KNVHSySAd7jMDxvUQskTnKcDpiuhxgTujh2R5gbjBeoPX4csU";
+        let coins: f64 = 1.0;
+        let expire_period = 2635087 + 10;
 
-        // let parameter = Args::new().add_string("test").serialize();
-        let parameter = Vec::new();
+        let parameter = Args::new().serialize();
+        // let parameter = Vec::new();
 
         let operation_id = client
             .call_sc(
@@ -377,4 +336,7 @@ mod tests {
 
         println!("Operations: {:?}", operations);
     }
+
+
+
 }
