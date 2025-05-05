@@ -333,19 +333,18 @@ mod tests {
             .await
             .expect("Failed to create client");
 
-        let target_function = "setName";
-        let fee = "1";
+        let target_function = "setName2";
+        let fee = "0.1";
         // let max_gas = ((u32::MAX - 1) / 100) as u64;
         let max_gas = MAX_GAS_CALL;
         let target_address = "AS1KNVHSySAd7jMDxvUQskTnKcDpiuhxgTujh2R5gbjBeoPX4csU";
-        let coins: f64 = 1.0;
+        let coins: f64 = 0.01;
         let expire_period = client
             .get_absolute_expire_period()
             .await
             .expect("Failed to get absolute expire period");
 
-        let parameter = Args::new().serialize();
-        // let parameter = Vec::new();
+        let parameter = Args::new().add_string("Ayoub").serialize();
 
         let operation_id = client
             .call_sc(
