@@ -13,7 +13,7 @@ use massa_proto_rs::massa::{
         SendOperationsRequest, get_datastore_entry_filter,
         public_service_client::PublicServiceClient, send_operations_response,
     },
-    model::v1::{AddressKeyEntry, DatastoreEntry, NativeAmount, OperationWrapper},
+    model::v1::{AddressKeyEntry, DatastoreEntry, NativeAmount, OperationWrapper, PublicStatus},
 };
 use massa_serialization::Serializer;
 use massa_signature::KeyPair;
@@ -119,12 +119,14 @@ impl PublicGrpcClient {
         Ok(())
     }
 
-    pub async fn get_status(&mut self) -> Result<GetStatusResponse, tonic::Status> {
+    pub async fn get_status(&mut self) -> Result<PublicStatus> {
         let request = Request::new(GetStatusRequest {});
 
         let response = self.client.get_status(request).await?.into_inner();
 
-        Ok(response)
+        let status = response.status.context("Failed to get status")?;
+
+        Ok(status)
     }
 
     pub async fn call_sc(
@@ -277,16 +279,18 @@ impl PublicGrpcClient {
     }
 
     pub async fn get_minimal_fee(&mut self) -> Result<Option<NativeAmount>> {
-        let status_response = self.get_status().await.context("Failed to get status")?;
-
-        let status = status_response.status.context("Failed to get status")?;
+        let status = self.get_status().await.context("Failed to get status")?;
 
         let minimal_fee = status.minimal_fees;
 
         Ok(minimal_fee)
     }
 
+    pub async fn get_absolute_expire_period(&mut self) -> Result<u64> {
+        let status_response = self.get_status().await.context("Failed to get status")?;
 
+        Ok(0)
+    }
 }
 
 #[cfg(test)]
@@ -301,11 +305,8 @@ mod tests {
         let mut client = PublicGrpcClient::new_buildnet().await.unwrap();
         let response = client.get_status().await.unwrap();
 
-        // Assert response.status is not none
-        assert!(response.status.is_some());
-
         // Assert response.status.version is "DEVN.28.12"
-        assert_eq!(response.status.unwrap().version, "DEVN.28.12");
+        assert_eq!(response.version, "DEVN.28.12");
     }
 
     #[tokio::test]
