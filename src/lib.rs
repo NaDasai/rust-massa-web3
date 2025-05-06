@@ -3,8 +3,11 @@ pub mod client;
 pub mod constants;
 pub mod types;
 
-#[cfg(test)]
-mod tests {
+pub use alloy_primitives;
+pub use massa_proto_rs;
+pub use tokio;
+pub use tokio_stream;
+pub use tonic;
 
-    use super::*;
-}
+#[cfg(test)]
+mod tests {}
