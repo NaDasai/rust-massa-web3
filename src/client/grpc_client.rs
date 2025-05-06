@@ -9,16 +9,21 @@ use massa_models::{
 };
 use massa_proto_rs::massa::{
     api::v1::{
-        GetDatastoreEntriesRequest, GetOperationsRequest, GetStatusRequest, GetStatusResponse,
-        SendOperationsRequest, get_datastore_entry_filter,
+        ExecutedOpsChangesFilter, GetDatastoreEntriesRequest, GetOperationsRequest,
+        GetStatusRequest, GetStatusResponse, NewSlotExecutionOutputsFilter,
+        NewSlotExecutionOutputsRequest, SendOperationsRequest, executed_ops_changes_filter,
+        get_datastore_entry_filter, new_slot_execution_outputs_filter,
         public_service_client::PublicServiceClient, send_operations_response,
     },
-    model::v1::{AddressKeyEntry, DatastoreEntry, NativeAmount, OperationWrapper, PublicStatus},
+    model::v1::{
+        AddressKeyEntry, DatastoreEntry, ExecutionOutputStatus, NativeAmount, OperationWrapper,
+        PublicStatus,
+    },
 };
 use massa_serialization::Serializer;
 use massa_signature::KeyPair;
 use tokio::sync::mpsc;
-use tokio_stream::wrappers::ReceiverStream;
+use tokio_stream::{StreamExt, wrappers::ReceiverStream};
 use tonic::{Request, transport::Channel};
 
 use crate::{
@@ -309,10 +314,103 @@ impl PublicGrpcClient {
 
         Ok(None)
     }
+
+    pub async fn wait_for_operation(
+        &mut self,
+        operation_id: String,
+        is_speculative: bool,
+    ) -> Result<i32> {
+        // Create an MPSC channel with a buffer size of 128.
+        // This allows up to 128 messages to be buffered without blocking the sender.
+        // If the receiver doesn't consume messages fast enough, sending will await (apply backpressure).
+        // Adjust the buffer size based on expected message rate and latency tolerance.
+        let (tx, rx) = mpsc::channel(128);
+
+        // Create a ReceiverStream from the receiver end of the channel
+        let ack = ReceiverStream::new(rx);
+
+        // Create the request
+        let request = Request::new(ack);
+
+        // Send the request to the client
+        let response = self
+            .client
+            .new_slot_execution_outputs(request)
+            .await
+            .context("Failed to send operations to the client")?;
+
+        // Create the filter for the operation id
+        let filter = NewSlotExecutionOutputsFilter {
+            filter: Some(
+                new_slot_execution_outputs_filter::Filter::ExecutedOpsChangesFilter(
+                    ExecutedOpsChangesFilter {
+                        filter: Some(executed_ops_changes_filter::Filter::OperationId(
+                            operation_id.clone(),
+                        )),
+                    },
+                ),
+            ),
+        };
+
+        let filters = vec![filter];
+
+        // Create the request stream for new slot execution outputs
+        let request_stream = NewSlotExecutionOutputsRequest { filters };
+
+        // Send the request stream using the channel
+        tx.send(request_stream)
+            .await
+            .context("Failed to send operations using the channel")?;
+
+        // Get the response stream
+        let mut response_stream = response.into_inner();
+
+        // Use the correct status based on the is_speculative flag
+        let event_fetcher_condition_status = if is_speculative {
+            ExecutionOutputStatus::Candidate as i32
+        } else {
+            ExecutionOutputStatus::Final as i32
+        };
+
+        // Loop through the response stream
+        while let Some(response) = response_stream.next().await {
+            let slot_execution_output = response
+                .context("Failed to get message from send operations stream")?
+                .output
+                .context("Failed to get output from send operations response")?;
+
+            if slot_execution_output.status == event_fetcher_condition_status {
+                let execution_output = slot_execution_output.execution_output.context(
+                    "Failed to get execution output from slot execution output response",
+                )?;
+
+                let states_changes = execution_output
+                    .state_changes
+                    .context("Failed to get states changes from execution output response")?;
+
+                let executed_ops_changes = states_changes.executed_ops_changes;
+
+                // Check if the operation id is in the executed_ops_changes vector and return its status
+                for executed_ops_change in executed_ops_changes {
+                    if executed_ops_change.operation_id == operation_id {
+                        let operation_value = executed_ops_change
+                            .value
+                            .context("Failed to get operation value")?;
+
+                        return Ok(operation_value.status);
+                    }
+                }
+            }
+        }
+
+        Err(Error::msg(format!("Operation {} not found", operation_id)))
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use massa_proto_rs::massa::model::v1::OperationExecutionStatus;
+
     use crate::{basic_elements::args::Args, constants::MAX_GAS_CALL};
 
     // Import the parent module
@@ -344,7 +442,7 @@ mod tests {
             .await
             .expect("Failed to get absolute expire period");
 
-        let parameter = Args::new().add_string("Ayoub").serialize();
+        let parameter = Args::new().add_string("Samir").serialize();
 
         let operation_id = client
             .call_sc(
@@ -361,12 +459,14 @@ mod tests {
 
         println!("Operation ID of setting name: {}", operation_id);
 
-        // trying to get operation
-        let operations = client
-            .get_operations(vec![operation_id])
+        // wait for the operation to complete speculative
+        let operation_status = client
+            .wait_for_operation(operation_id, true)
             .await
-            .expect("Failed to get operations");
+            .expect("Failed to wait for operation");
 
-        println!("Operations: {:?}", operations);
+        println!("Operation status: {}", operation_status);
+
+        assert_eq!(operation_status, OperationExecutionStatus::Success as i32);
     }
 }
