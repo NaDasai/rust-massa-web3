@@ -10,7 +10,7 @@ use massa_models::{
 use massa_proto_rs::massa::{
     api::v1::{
         ExecutedOpsChangesFilter, GetDatastoreEntriesRequest, GetOperationsRequest,
-        GetStatusRequest, GetStatusResponse, NewSlotExecutionOutputsFilter,
+        GetStatusRequest, NewSlotExecutionOutputsFilter,
         NewSlotExecutionOutputsRequest, SendOperationsRequest, executed_ops_changes_filter,
         get_datastore_entry_filter, new_slot_execution_outputs_filter,
         public_service_client::PublicServiceClient, send_operations_response,
