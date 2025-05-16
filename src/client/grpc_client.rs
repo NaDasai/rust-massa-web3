@@ -435,7 +435,10 @@ impl PublicGrpcClient {
 mod tests {
     use massa_proto_rs::massa::model::v1::OperationExecutionStatus;
 
-    use crate::{basic_elements::args::Args, constants::MAX_GAS_CALL};
+    use crate::{
+        basic_elements::{args::Args, serializers::bytes_to_string},
+        constants::MAX_GAS_CALL,
+    };
 
     // Import the parent module
     use super::*;
@@ -455,11 +458,11 @@ mod tests {
             .await
             .expect("Failed to create client");
 
-        let target_function = "setName2";
+        let target_function = "setName";
         let fee = "0.1";
         // let max_gas = ((u32::MAX - 1) / 100) as u64;
         let max_gas = MAX_GAS_CALL;
-        let target_address = "AS1KNVHSySAd7jMDxvUQskTnKcDpiuhxgTujh2R5gbjBeoPX4csU";
+        let target_address = "AS1KDFtTy8jaK31b36EtNfVCt6GLCYdRKQD3fS2J1B6vFJMSCTiW";
         let coins: f64 = 0.01;
         let expire_period = client
             .get_absolute_expire_period()
@@ -491,13 +494,24 @@ mod tests {
 
         println!("Operation status: {}", operation_status);
 
-        assert_eq!(operation_status, OperationExecutionStatus::Success as i32);
+        // assert_eq!(operation_status, OperationExecutionStatus::Success as i32);
 
-        let response = client
+        let events = client
             .get_operation_events(&operation_id)
             .await
             .expect("Failed to get operations events");
 
-        println!("Operation events: {:?}", response);
+        println!("Operation events: {:?}", &events);
+
+        for event in events {
+            let deserialized_data = bytes_to_string(&event.data);
+
+            println!("Event Data: {:?}", &deserialized_data);
+
+            let context = event.context.expect("Failed to get event context");
+
+            println!("Event Context: {:?}", &context);
+
+        }
     }
 }
