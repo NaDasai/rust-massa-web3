@@ -10,14 +10,15 @@ use massa_models::{
 use massa_proto_rs::massa::{
     api::v1::{
         ExecutedOpsChangesFilter, GetDatastoreEntriesRequest, GetOperationsRequest,
-        GetStatusRequest, NewSlotExecutionOutputsFilter, NewSlotExecutionOutputsRequest,
-        SendOperationsRequest, executed_ops_changes_filter, get_datastore_entry_filter,
-        new_slot_execution_outputs_filter, public_service_client::PublicServiceClient,
+        GetScExecutionEventsRequest, GetStatusRequest, NewSlotExecutionOutputsFilter,
+        NewSlotExecutionOutputsRequest, ScExecutionEventsFilter, SendOperationsRequest,
+        executed_ops_changes_filter, get_datastore_entry_filter, new_slot_execution_outputs_filter,
+        public_service_client::PublicServiceClient, sc_execution_events_filter,
         send_operations_response,
     },
     model::v1::{
         AddressKeyEntry, DatastoreEntry, ExecutionOutputStatus, NativeAmount, OperationWrapper,
-        PublicStatus,
+        PublicStatus, ScExecutionEvent,
     },
 };
 use massa_serialization::Serializer;
@@ -403,6 +404,31 @@ impl PublicGrpcClient {
 
         Err(Error::msg(format!("Operation {} not found", operation_id)))
     }
+
+    pub async fn get_operation_events(
+        &mut self,
+        operation_id: &str,
+    ) -> Result<Vec<ScExecutionEvent>> {
+        let filter = ScExecutionEventsFilter {
+            filter: Some(sc_execution_events_filter::Filter::OriginalOperationId(
+                operation_id.to_string(),
+            )),
+        };
+
+        let request = Request::new(GetScExecutionEventsRequest {
+            filters: vec![filter],
+        });
+
+        let response = self
+            .client
+            .get_sc_execution_events(request)
+            .await
+            .context("Failed to get sc execution events")?;
+
+        let events = response.into_inner().events;
+
+        Ok(events)
+    }
 }
 
 #[cfg(test)]
@@ -459,12 +485,19 @@ mod tests {
 
         // wait for the operation to complete speculative
         let operation_status = client
-            .wait_for_operation(operation_id, true)
+            .wait_for_operation(operation_id.clone(), true)
             .await
             .expect("Failed to wait for operation");
 
         println!("Operation status: {}", operation_status);
 
         assert_eq!(operation_status, OperationExecutionStatus::Success as i32);
+
+        let response = client
+            .get_operation_events(&operation_id)
+            .await
+            .expect("Failed to get operations events");
+
+        println!("Operation events: {:?}", response);
     }
 }
