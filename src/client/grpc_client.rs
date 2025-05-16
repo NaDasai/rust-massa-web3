@@ -10,10 +10,10 @@ use massa_models::{
 use massa_proto_rs::massa::{
     api::v1::{
         ExecutedOpsChangesFilter, GetDatastoreEntriesRequest, GetOperationsRequest,
-        GetStatusRequest, NewSlotExecutionOutputsFilter,
-        NewSlotExecutionOutputsRequest, SendOperationsRequest, executed_ops_changes_filter,
-        get_datastore_entry_filter, new_slot_execution_outputs_filter,
-        public_service_client::PublicServiceClient, send_operations_response,
+        GetStatusRequest, NewSlotExecutionOutputsFilter, NewSlotExecutionOutputsRequest,
+        SendOperationsRequest, executed_ops_changes_filter, get_datastore_entry_filter,
+        new_slot_execution_outputs_filter, public_service_client::PublicServiceClient,
+        send_operations_response,
     },
     model::v1::{
         AddressKeyEntry, DatastoreEntry, ExecutionOutputStatus, NativeAmount, OperationWrapper,
@@ -221,8 +221,6 @@ impl PublicGrpcClient {
                     return Err(Error::msg(format!("{:?}", e)));
                 }
                 send_operations_response::Result::OperationIds(operations) => {
-                    dbg!(&operations.operation_ids);
-
                     // Return the first operation id
                     return Ok(operations.operation_ids[0].clone());
                 }
