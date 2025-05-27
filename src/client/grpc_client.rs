@@ -125,7 +125,7 @@ impl PublicGrpcClient {
         Ok(())
     }
 
-    pub async fn get_current_address(&mut self) -> Result<Address> {
+    pub fn get_current_address(&mut self) -> Result<Address> {
         let keypair = self.keypair.as_ref().context("Failed to get keypair")?;
 
         let public_key = keypair.get_public_key();
@@ -530,7 +530,7 @@ mod tests {
             .await
             .expect("Failed to create client");
 
-        let address = client.get_current_address().await.unwrap();
+        let address = client.get_current_address().unwrap();
 
         let current_address = "AU12Yd4kCcsizeeTEK9AZyBnuJNZ1cpp99XfCZgzS77ZKnwTFMpVE";
 
