@@ -125,6 +125,16 @@ impl PublicGrpcClient {
         Ok(())
     }
 
+    pub async fn get_current_address(&mut self) -> Result<Address> {
+        let keypair = self.keypair.as_ref().context("Failed to get keypair")?;
+
+        let public_key = keypair.get_public_key();
+
+        let address = Address::from_public_key(&public_key);
+
+        Ok(address)
+    }
+
     pub async fn get_status(&mut self) -> Result<PublicStatus> {
         let request = Request::new(GetStatusRequest {});
 
@@ -511,7 +521,21 @@ mod tests {
             let context = event.context.expect("Failed to get event context");
 
             println!("Event Context: {:?}", &context);
-
         }
+    }
+
+    #[tokio::test]
+    async fn test_get_current_address() {
+        let mut client = PublicGrpcClient::new_from_env()
+            .await
+            .expect("Failed to create client");
+
+        let address = client.get_current_address().await.unwrap();
+
+        let current_address = "AU12Yd4kCcsizeeTEK9AZyBnuJNZ1cpp99XfCZgzS77ZKnwTFMpVE";
+
+        println!("Current address: {:?}", address);
+
+        assert_eq!(address.to_string(), current_address);
     }
 }
