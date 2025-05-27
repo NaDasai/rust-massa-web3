@@ -4,6 +4,7 @@ pub mod constants;
 pub mod types;
 
 pub use alloy_primitives;
+pub use massa_models;
 pub use massa_proto_rs;
 pub use tokio;
 pub use tokio_stream;
