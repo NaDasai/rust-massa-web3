@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use alloy_primitives::{U256, utils::format_units};
 use anyhow::{Context, Error, Result};
 use massa_models::{
     address::Address,
@@ -9,12 +10,14 @@ use massa_models::{
 };
 use massa_proto_rs::massa::{
     api::v1::{
-        ExecutedOpsChangesFilter, GetDatastoreEntriesRequest, GetOperationsRequest,
-        GetScExecutionEventsRequest, GetStatusRequest, NewSlotExecutionOutputsFilter,
-        NewSlotExecutionOutputsRequest, ScExecutionEventsFilter, SendOperationsRequest,
-        executed_ops_changes_filter, get_datastore_entry_filter, new_slot_execution_outputs_filter,
-        public_service_client::PublicServiceClient, sc_execution_events_filter,
-        send_operations_response,
+        AddressBalanceCandidate, ExecutedOpsChangesFilter, ExecutionQueryRequestItem,
+        GetDatastoreEntriesRequest, GetOperationsRequest, GetScExecutionEventsRequest,
+        GetStatusRequest, NewSlotExecutionOutputsFilter, NewSlotExecutionOutputsRequest,
+        QueryStateRequest, ScExecutionEventsFilter, SendOperationsRequest,
+        executed_ops_changes_filter, execution_query_request_item, execution_query_response,
+        execution_query_response_item, get_datastore_entry_filter,
+        new_slot_execution_outputs_filter, public_service_client::PublicServiceClient,
+        sc_execution_events_filter, send_operations_response,
     },
     model::v1::{
         AddressKeyEntry, DatastoreEntry, ExecutionOutputStatus, NativeAmount, OperationWrapper,
@@ -439,6 +442,52 @@ impl PublicGrpcClient {
 
         Ok(events)
     }
+
+    pub async fn get_mas_balance(&mut self, address: &str) -> Result<f64> {
+        let request = Request::new(QueryStateRequest {
+            queries: vec![ExecutionQueryRequestItem {
+                request_item: Some(
+                    execution_query_request_item::RequestItem::AddressBalanceCandidate(
+                        AddressBalanceCandidate {
+                            address: address.to_string(),
+                        },
+                    ),
+                ),
+            }],
+        });
+
+        let query_state_res = self
+            .client
+            .query_state(request)
+            .await
+            .context("Failed to query state")?
+            .into_inner();
+        let responses = query_state_res.responses;
+
+        let balance_query_response = responses
+            .get(0)
+            .context("Failed to get query response")?
+            .response
+            .as_ref()
+            .context("Failed to get query response")?;
+
+        if let execution_query_response::Response::Result(query_response_item) =
+            balance_query_response
+        {
+            if let Some(execution_query_response_item::ResponseItem::Amount(amount)) =
+                &query_response_item.response_item
+            {
+                let formatted_amount = format_units(amount.mantissa, amount.scale as u8)
+                    .unwrap_or_default()
+                    .parse::<f64>()
+                    .unwrap_or_default();
+
+                return Ok(formatted_amount);
+            }
+        }
+
+        Err(anyhow::anyhow!("Cannot get MAS balance"))
+    }
 }
 
 #[cfg(test)]
@@ -537,5 +586,24 @@ mod tests {
         println!("Current address: {:?}", address);
 
         assert_eq!(address.to_string(), current_address);
+    }
+
+    #[tokio::test]
+    async fn test_get_mas_balance() {
+        let mut client = PublicGrpcClient::new_from_env()
+            .await
+            .expect("Failed to create client");
+
+        let address = client.get_current_address().unwrap();
+
+        let current_address = "AU12Yd4kCcsizeeTEK9AZyBnuJNZ1cpp99XfCZgzS77ZKnwTFMpVE";
+
+        println!("Current address: {:?}", address);
+
+        assert_eq!(address.to_string(), current_address);
+
+        let balance = client.get_mas_balance(&address.to_string()).await.unwrap();
+
+        println!("Current balance: {:?}", balance);
     }
 }
