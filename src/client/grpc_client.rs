@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use alloy_primitives::{U256, utils::format_units};
-use anyhow::{Context, Error, Result};
+use anyhow::{Context, Error, Result, anyhow};
 use massa_models::{
     address::Address,
     amount::Amount,
@@ -13,11 +13,12 @@ use massa_proto_rs::massa::{
         AddressBalanceCandidate, ExecutedOpsChangesFilter, ExecutionQueryRequestItem,
         GetDatastoreEntriesRequest, GetOperationsRequest, GetScExecutionEventsRequest,
         GetStatusRequest, NewSlotExecutionOutputsFilter, NewSlotExecutionOutputsRequest,
-        QueryStateRequest, ScExecutionEventsFilter, SendOperationsRequest,
-        executed_ops_changes_filter, execution_query_request_item, execution_query_response,
-        execution_query_response_item, get_datastore_entry_filter,
-        new_slot_execution_outputs_filter, public_service_client::PublicServiceClient,
-        sc_execution_events_filter, send_operations_response,
+        OpExecutionStatusCandidate, OpExecutionStatusFinal, QueryStateRequest,
+        ScExecutionEventsFilter, SendOperationsRequest, executed_ops_changes_filter,
+        execution_query_request_item, execution_query_response, execution_query_response_item,
+        get_datastore_entry_filter, new_slot_execution_outputs_filter,
+        public_service_client::PublicServiceClient, sc_execution_events_filter,
+        send_operations_response,
     },
     model::v1::{
         AddressKeyEntry, DatastoreEntry, ExecutionOutputStatus, NativeAmount, OperationWrapper,
@@ -487,6 +488,56 @@ impl PublicGrpcClient {
         }
 
         Err(anyhow::anyhow!("Cannot get MAS balance"))
+    }
+
+    pub async fn get_operation_status(
+        &mut self,
+        operation_id: &str,
+        is_final: bool,
+    ) -> Result<i32> {
+        let request_item = if is_final {
+            execution_query_request_item::RequestItem::OpExecutionStatusFinal(
+                OpExecutionStatusFinal {
+                    operation_id: operation_id.to_string(),
+                },
+            )
+        } else {
+            execution_query_request_item::RequestItem::OpExecutionStatusCandidate(
+                OpExecutionStatusCandidate {
+                    operation_id: operation_id.to_string(),
+                },
+            )
+        };
+
+        let request = Request::new(QueryStateRequest {
+            queries: vec![ExecutionQueryRequestItem {
+                request_item: Some(request_item),
+            }],
+        });
+
+        let response = self
+            .client
+            .query_state(request)
+            .await
+            .context("Failed to get the operation status")?
+            .into_inner();
+
+        if let Some(execution_query_response) = response.responses.first() {
+            if let Some(op_exec_response) = &execution_query_response.response {
+                if let execution_query_response::Response::Result(query_response_item) =
+                    op_exec_response
+                {
+                    if let Some(execution_query_response_item::ResponseItem::ExecutionStatus(
+                        status,
+                    )) = &query_response_item.response_item
+                    {
+                        return Ok(*status);
+                    }
+                }
+            }
+        }
+
+        Err(anyhow!("Failed to get the operation status"))
     }
 }
 
