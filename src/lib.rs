@@ -1,6 +1,7 @@
 pub mod basic_elements;
 pub mod client;
 pub mod constants;
+pub mod helpers;
 pub mod types;
 
 pub use alloy_primitives;

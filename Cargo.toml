@@ -19,3 +19,4 @@ alloy-primitives = "1.0.0"
 byteorder = "1.5.0"
 rand = "0.9.1"
 tokio-stream = "0.1.17"
+serde = { version = "1.0.219", features = ["derive"] }
