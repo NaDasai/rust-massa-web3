@@ -1492,7 +1492,7 @@ dependencies = [
 [[package]]
 name = "massa_hash"
 version = "3.0.0"
-source = "git+https://github.com/massalabs/massa.git?branch=main#a29f1cb588ad48237db232453747dd1aec96abe7"
+source = "git+https://github.com/massalabs/massa.git?branch=main_2_6#1b50e410aad1b8569993f7a89c2fe9daea522c4f"
 dependencies = [
  "blake3",
  "bs58",
@@ -1506,7 +1506,7 @@ dependencies = [
 [[package]]
 name = "massa_models"
 version = "3.0.0"
-source = "git+https://github.com/massalabs/massa.git?branch=main#a29f1cb588ad48237db232453747dd1aec96abe7"
+source = "git+https://github.com/massalabs/massa.git?branch=main_2_6#1b50e410aad1b8569993f7a89c2fe9daea522c4f"
 dependencies = [
  "bitvec",
  "bs58",
@@ -1534,7 +1534,7 @@ dependencies = [
 [[package]]
 name = "massa_serialization"
 version = "3.0.0"
-source = "git+https://github.com/massalabs/massa.git?branch=main#a29f1cb588ad48237db232453747dd1aec96abe7"
+source = "git+https://github.com/massalabs/massa.git?branch=main_2_6#1b50e410aad1b8569993f7a89c2fe9daea522c4f"
 dependencies = [
  "displaydoc",
  "nom",
@@ -1546,7 +1546,7 @@ dependencies = [
 [[package]]
 name = "massa_signature"
 version = "3.0.0"
-source = "git+https://github.com/massalabs/massa.git?branch=main#a29f1cb588ad48237db232453747dd1aec96abe7"
+source = "git+https://github.com/massalabs/massa.git?branch=main_2_6#1b50e410aad1b8569993f7a89c2fe9daea522c4f"
 dependencies = [
  "bs58",
  "displaydoc",
@@ -1563,7 +1563,7 @@ dependencies = [
 [[package]]
 name = "massa_time"
 version = "3.0.0"
-source = "git+https://github.com/massalabs/massa.git?branch=main#a29f1cb588ad48237db232453747dd1aec96abe7"
+source = "git+https://github.com/massalabs/massa.git?branch=main_2_6#1b50e410aad1b8569993f7a89c2fe9daea522c4f"
 dependencies = [
  "displaydoc",
  "massa-proto-rs 0.1.0 (git+https://github.com/massalabs/massa-proto-rs.git?rev=9bfbbe1b5dc62815aa2b9f9c5b827b0198da65e3)",

@@ -12,9 +12,9 @@ tonic = "0.12"
 massa-proto-rs = { git = "https://github.com/massalabs/massa-proto-rs", branch = "main", features = [
     "tonic",
 ] }
-massa_signature = { git = "https://github.com/massalabs/massa.git", branch = "main", package = "massa_signature" }
-massa_models = { git = "https://github.com/massalabs/massa.git", branch = "main", package = "massa_models" }
-massa_serialization = { git = "https://github.com/massalabs/massa.git", branch = "main", package = "massa_serialization" }
+massa_signature = { git = "https://github.com/massalabs/massa.git", branch = "main_2_6", package = "massa_signature" }
+massa_models = { git = "https://github.com/massalabs/massa.git", branch = "main_2_6", package = "massa_models" }
+massa_serialization = { git = "https://github.com/massalabs/massa.git", branch = "main_2_6", package = "massa_serialization" }
 alloy-primitives = "1.0.0"
 byteorder = "1.5.0"
 rand = "0.9.1"
