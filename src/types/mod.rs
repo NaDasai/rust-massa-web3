@@ -32,14 +32,14 @@ pub enum ArrayType {
 
 #[derive(Debug, Clone)]
 pub enum ChainId {
-    MAINNET = 1,
+    MAINNET = 77658377,
     BUILDNET = 77658366,
 }
 
 impl ChainId {
     pub fn to_u64(&self) -> u64 {
         match self {
-            ChainId::MAINNET => 1,
+            ChainId::MAINNET => 77658377,
             ChainId::BUILDNET => 77658366,
         }
     }
