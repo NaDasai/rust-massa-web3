@@ -35,7 +35,7 @@ use tonic::{Request, transport::Channel};
 use crate::{
     basic_elements::serializers::{bytes_to_string, string_to_bytes},
     constants::{PERIOD_TO_LIVE_DEFAULT, PublicGRPCURL},
-    types::{ChainId, ReadStorageKey},
+    types::{ChainId, ReadStorageKey, ReadStorageKeyBytes},
 };
 
 #[derive(Debug, Clone)]
@@ -258,6 +258,39 @@ impl PublicGrpcClient {
         // Loop on all storage keys and call the read_storage_key function
         for storage_key in storage_keys {
             let key_bytes = string_to_bytes(&storage_key.key);
+
+            let key_entry = AddressKeyEntry {
+                address: storage_key.smart_contract_address,
+                key: key_bytes,
+            };
+
+            let datastore_entry_filter = massa_proto_rs::massa::api::v1::GetDatastoreEntryFilter {
+                filter: Some(get_datastore_entry_filter::Filter::AddressKey(key_entry)),
+            };
+
+            datastores_entries_filters.push(datastore_entry_filter);
+        }
+
+        let request = GetDatastoreEntriesRequest {
+            filters: datastores_entries_filters,
+        };
+
+        let response = self.client.get_datastore_entries(request).await?;
+
+        let entries_result = response.into_inner().datastore_entries;
+
+        Ok(entries_result)
+    }
+
+    pub async fn read_storage_key_bytes(
+        &mut self,
+        storage_keys: Vec<ReadStorageKeyBytes>,
+    ) -> Result<Vec<DatastoreEntry>> {
+        let mut datastores_entries_filters = Vec::new();
+
+        // Loop on all storage keys and call the read_storage_key function
+        for storage_key in storage_keys {
+            let key_bytes = storage_key.key;
 
             let key_entry = AddressKeyEntry {
                 address: storage_key.smart_contract_address,

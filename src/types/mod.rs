@@ -6,6 +6,12 @@ pub struct ReadStorageKey {
     pub key: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReadStorageKeyBytes {
+    pub smart_contract_address: String,
+    pub key: Vec<u8>,
+}
+
 // --- ArgTypes / ArrayTypes (Optional, depends on usage) ---
 // Rust's type system often makes these less necessary than in JS.
 // If you need dynamic dispatch based on type at runtime, you might define them.
