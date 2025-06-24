@@ -1,5 +1,6 @@
 pub mod event;
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ReadStorageKey {
     pub smart_contract_address: String,
     pub key: String,
