@@ -10,15 +10,15 @@ use massa_models::{
 };
 use massa_proto_rs::massa::{
     api::v1::{
-        AddressBalanceCandidate, ExecutedOpsChangesFilter, ExecutionQueryRequestItem,
-        GetDatastoreEntriesRequest, GetOperationsRequest, GetScExecutionEventsRequest,
-        GetStatusRequest, NewSlotExecutionOutputsFilter, NewSlotExecutionOutputsRequest,
-        OpExecutionStatusCandidate, OpExecutionStatusFinal, QueryStateRequest,
-        ScExecutionEventsFilter, SendOperationsRequest, executed_ops_changes_filter,
-        execution_query_request_item, execution_query_response, execution_query_response_item,
-        get_datastore_entry_filter, new_slot_execution_outputs_filter,
-        public_service_client::PublicServiceClient, sc_execution_events_filter,
-        send_operations_response,
+        AddressBalanceCandidate, AddressDatastoreKeysFinal, ExecutedOpsChangesFilter,
+        ExecutionQueryRequestItem, GetDatastoreEntriesRequest, GetOperationsRequest,
+        GetScExecutionEventsRequest, GetStatusRequest, NewSlotExecutionOutputsFilter,
+        NewSlotExecutionOutputsRequest, OpExecutionStatusCandidate, OpExecutionStatusFinal,
+        QueryStateRequest, ScExecutionEventsFilter, SendOperationsRequest,
+        executed_ops_changes_filter, execution_query_request_item, execution_query_response,
+        execution_query_response_item, get_datastore_entry_filter,
+        new_slot_execution_outputs_filter, public_service_client::PublicServiceClient,
+        sc_execution_events_filter, send_operations_response,
     },
     model::v1::{
         AddressKeyEntry, DatastoreEntry, ExecutionOutputStatus, NativeAmount, OperationWrapper,
@@ -27,12 +27,13 @@ use massa_proto_rs::massa::{
 };
 use massa_serialization::Serializer;
 use massa_signature::KeyPair;
+use rand::rand_core::le;
 use tokio::sync::mpsc;
 use tokio_stream::{StreamExt, wrappers::ReceiverStream};
 use tonic::{Request, transport::Channel};
 
 use crate::{
-    basic_elements::serializers::string_to_bytes,
+    basic_elements::serializers::{bytes_to_string, string_to_bytes},
     constants::{PERIOD_TO_LIVE_DEFAULT, PublicGRPCURL},
     types::{ChainId, ReadStorageKey},
 };
@@ -539,6 +540,62 @@ impl PublicGrpcClient {
 
         Err(anyhow!("Failed to get the operation status"))
     }
+
+    pub async fn get_storage_keys(
+        &mut self,
+        address: &str,
+        prefix: Vec<u8>,
+    ) -> Result<Vec<String>> {
+        let query_state_request = QueryStateRequest {
+            queries: vec![ExecutionQueryRequestItem {
+                request_item: Some(
+                    execution_query_request_item::RequestItem::AddressDatastoreKeysFinal(
+                        AddressDatastoreKeysFinal {
+                            address: address.to_string(),
+                            prefix,
+                            start_key: None,
+                            inclusive_start_key: None,
+                            end_key: None,
+                            inclusive_end_key: None,
+                            limit: None,
+                        },
+                    ),
+                ),
+            }],
+        };
+
+        let response = self
+            .client
+            .query_state(query_state_request)
+            .await?
+            .into_inner();
+
+        if let Some(execution_query_response) = response.responses.first() {
+            if let Some(storage_keys_response) = &execution_query_response.response {
+                if let execution_query_response::Response::Result(query_response_item) =
+                    storage_keys_response
+                {
+                    if let Some(execution_query_response_item::ResponseItem::VecBytes(
+                        address_datastore_keys_final,
+                    )) = &query_response_item.response_item
+                    {
+                        let storage_keys_bytes = &address_datastore_keys_final.items;
+
+                        let mut storage_keys = Vec::new();
+
+                        for storage_key_bytes in storage_keys_bytes {
+                            let storage_key = bytes_to_string(storage_key_bytes);
+                            storage_keys.push(storage_key);
+                        }
+
+                        return Ok(storage_keys);
+                    }
+                }
+            }
+        }
+
+        Err(anyhow!("Failed to get the storage keys for the address"))
+    }
 }
 
 #[cfg(test)]
@@ -656,5 +713,29 @@ mod tests {
         let balance = client.get_mas_balance(&address.to_string()).await.unwrap();
 
         println!("Current balance: {:?}", balance);
+    }
+
+    #[tokio::test]
+    async fn test_get_storage_keys() {
+        let mut client = PublicGrpcClient::new_from_env()
+            .await
+            .expect("Failed to create client");
+
+        let address = "AS1fKChJfxdAVBUUSHya45cDrdfTXjPewjENszqeBbrW2tUS77QF";
+
+        println!("Current address: {}", address);
+
+        const BALANCE_PREFIX: u8 = 0x00;
+
+        let prefix = vec![BALANCE_PREFIX];
+
+        // let prefix = string_to_bytes("");
+
+        let storage_keys = client
+            .get_storage_keys(&address.to_string(), prefix)
+            .await
+            .unwrap();
+
+        println!("Storage keys: {:?}", storage_keys);
     }
 }
