@@ -1,6 +1,15 @@
+pub mod event;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ReadStorageKey {
     pub smart_contract_address: String,
     pub key: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReadStorageKeyBytes {
+    pub smart_contract_address: String,
+    pub key: Vec<u8>,
 }
 
 // --- ArgTypes / ArrayTypes (Optional, depends on usage) ---
@@ -30,14 +39,14 @@ pub enum ArrayType {
 
 #[derive(Debug, Clone)]
 pub enum ChainId {
-    MAINNET = 1,
+    MAINNET = 77658377,
     BUILDNET = 77658366,
 }
 
 impl ChainId {
     pub fn to_u64(&self) -> u64 {
         match self {
-            ChainId::MAINNET => 1,
+            ChainId::MAINNET => 77658377,
             ChainId::BUILDNET => 77658366,
         }
     }
