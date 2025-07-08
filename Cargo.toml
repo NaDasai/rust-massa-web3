@@ -9,13 +9,14 @@ dotenvy = "0.15.7"
 thiserror = "2.0.12"
 tokio = { version = "1.44.2", features = ["full"] }
 tonic = "0.12"
-massa-proto-rs = { git = "https://github.com/massalabs/massa-proto-rs", branch = "mainnet_2_3", features = [
+massa-proto-rs = { git = "https://github.com/massalabs/massa-proto-rs", branch = "main", features = [
     "tonic",
 ] }
-massa_signature = { git = "https://github.com/massalabs/massa.git", branch = "mainnet_2_3", package = "massa_signature" }
-massa_models = { git = "https://github.com/massalabs/massa.git", branch = "mainnet_2_3", package = "massa_models" }
-massa_serialization = { git = "https://github.com/massalabs/massa.git", branch = "mainnet_2_3", package = "massa_serialization" }
+massa_signature = { git = "https://github.com/massalabs/massa.git", branch = "main_2_6", package = "massa_signature" }
+massa_models = { git = "https://github.com/massalabs/massa.git", branch = "main_2_6", package = "massa_models" }
+massa_serialization = { git = "https://github.com/massalabs/massa.git", branch = "main_2_6", package = "massa_serialization" }
 alloy-primitives = "1.0.0"
 byteorder = "1.5.0"
 rand = "0.9.1"
 tokio-stream = "0.1.17"
+serde = { version = "1.0.219", features = ["derive"] }
