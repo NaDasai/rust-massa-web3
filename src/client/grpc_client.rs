@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{str::FromStr, time::Duration};
 
 use alloy_primitives::{U256, utils::format_units};
 use anyhow::{Context, Error, Result, anyhow};
@@ -28,7 +28,7 @@ use massa_proto_rs::massa::{
 use massa_serialization::Serializer;
 use massa_signature::KeyPair;
 use rand::rand_core::le;
-use tokio::sync::mpsc;
+use tokio::{sync::mpsc, time::timeout};
 use tokio_stream::{StreamExt, wrappers::ReceiverStream};
 use tonic::{Request, transport::Channel};
 
@@ -367,6 +367,8 @@ impl PublicGrpcClient {
         operation_id: String,
         is_speculative: bool,
     ) -> Result<i32> {
+        let timeout_duration = Duration::from_secs(60); // 1 minute timeout
+
         // Create an MPSC channel with a buffer size of 128.
         // This allows up to 128 messages to be buffered without blocking the sender.
         // If the receiver doesn't consume messages fast enough, sending will await (apply backpressure).
@@ -419,38 +421,47 @@ impl PublicGrpcClient {
             ExecutionOutputStatus::Final as i32
         };
 
-        // Loop through the response stream
-        while let Some(response) = response_stream.next().await {
-            let slot_execution_output = response
-                .context("Failed to get message from send operations stream")?
-                .output
-                .context("Failed to get output from send operations response")?;
+        // Use timeout to wait for the correct response
+        let result = timeout(timeout_duration, async {
+            while let Some(response) = response_stream.next().await {
+                let slot_execution_output = response
+                    .context("Failed to get message from send operations stream")?
+                    .output
+                    .context("Failed to get output from send operations response")?;
 
-            if slot_execution_output.status == event_fetcher_condition_status {
-                let execution_output = slot_execution_output.execution_output.context(
-                    "Failed to get execution output from slot execution output response",
-                )?;
+                if slot_execution_output.status == event_fetcher_condition_status {
+                    let execution_output = slot_execution_output.execution_output.context(
+                        "Failed to get execution output from slot execution output response",
+                    )?;
 
-                let states_changes = execution_output
-                    .state_changes
-                    .context("Failed to get states changes from execution output response")?;
+                    let states_changes = execution_output
+                        .state_changes
+                        .context("Failed to get states changes from execution output response")?;
 
-                let executed_ops_changes = states_changes.executed_ops_changes;
+                    for executed_ops_change in states_changes.executed_ops_changes {
+                        if executed_ops_change.operation_id == operation_id {
+                            let operation_value = executed_ops_change
+                                .value
+                                .context("Failed to get operation value")?;
 
-                // Check if the operation id is in the executed_ops_changes vector and return its status
-                for executed_ops_change in executed_ops_changes {
-                    if executed_ops_change.operation_id == operation_id {
-                        let operation_value = executed_ops_change
-                            .value
-                            .context("Failed to get operation value")?;
-
-                        return Ok(operation_value.status);
+                            return Ok(operation_value.status);
+                        }
                     }
                 }
             }
-        }
 
-        Err(Error::msg(format!("Operation {} not found", operation_id)))
+            Err(Error::msg(format!("Operation {} not found", operation_id)))
+        })
+        .await;
+
+        // Handle timeout result
+        match result {
+            Ok(inner_result) => inner_result,
+            Err(_) => Err(Error::msg(format!(
+                "Timeout after {:?} while waiting for operation {}",
+                timeout_duration, operation_id
+            ))),
+        }
     }
 
     pub async fn get_operation_events(
